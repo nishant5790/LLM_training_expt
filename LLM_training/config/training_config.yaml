@@ -1,0 +1,108 @@
+# LoRA & PEFT Training Configuration
+
+# Model Configuration
+model:
+  model_name: "microsoft/DialoGPT-medium"  # Can be changed to any compatible model
+  cache_dir: "./model_cache"
+  use_auth_token: false
+  torch_dtype: "auto"  # auto, float16, bfloat16, float32
+
+# LoRA Configuration
+lora:
+  r: 16                    # Rank of adaptation
+  lora_alpha: 32           # LoRA scaling parameter
+  target_modules:          # Modules to apply LoRA to
+    - "c_attn"            # For GPT models
+    - "c_proj"
+    - "c_fc"
+  lora_dropout: 0.1        # Dropout for LoRA layers
+  bias: "none"             # none, all, lora_only
+  task_type: "CAUSAL_LM"   # CAUSAL_LM, SEQ_2_SEQ_LM, etc.
+
+# Alternative PEFT methods (uncomment to use)
+# adalora:
+#   init_r: 12
+#   target_r: 8
+#   beta1: 0.85
+#   beta2: 0.85
+#   tinit: 0
+#   tfinal: 1000
+#   deltaT: 10
+
+# Data Configuration
+data:
+  dataset_name: "local"     # "local" for custom data, or HF dataset name
+  data_path: "./data/sample_data.json"
+  validation_split: 0.1
+  max_seq_length: 512
+  train_on_inputs: false    # Whether to train on instruction tokens
+  group_by_length: true     # Group samples by length for efficiency
+  
+# Training Configuration
+training:
+  output_dir: "./outputs"
+  overwrite_output_dir: true
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 4
+  eval_accumulation_steps: 1
+  
+  # Learning Rate & Optimization
+  learning_rate: 3e-4
+  weight_decay: 0.01
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1e-8
+  lr_scheduler_type: "cosine"  # linear, cosine, polynomial
+  warmup_steps: 100
+  
+  # Memory & Performance
+  fp16: false              # Use mixed precision
+  bf16: true               # Use bfloat16 (recommended for newer hardware)
+  gradient_checkpointing: true
+  dataloader_num_workers: 4
+  remove_unused_columns: false
+  
+  # Evaluation & Logging
+  evaluation_strategy: "steps"
+  eval_steps: 500
+  save_strategy: "steps"
+  save_steps: 500
+  logging_steps: 100
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  
+  # Early Stopping
+  early_stopping_patience: 3
+  early_stopping_threshold: 0.001
+  
+  # Miscellaneous
+  seed: 42
+  data_seed: 42
+  report_to: ["tensorboard", "wandb"]  # Logging platforms
+  run_name: "lora-llm-finetune"
+
+# Inference Configuration
+inference:
+  max_new_tokens: 256
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 50
+  do_sample: true
+  repetition_penalty: 1.1
+  pad_token_id: null        # Will be set automatically
+
+# WandB Configuration (optional)
+wandb:
+  project: "lora-peft-llm"
+  entity: null              # Your wandb username/team
+  tags: ["lora", "peft", "llm", "fine-tuning"]
+  notes: "LoRA fine-tuning experiment"
+
+# Hardware Configuration
+hardware:
+  device_map: "auto"        # auto, balanced, or specific mapping
+  torch_compile: false      # Enable torch.compile for speedup
+  use_flash_attention: false # Enable flash attention if available 
